@@ -1,0 +1,92 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String     @id @default(cuid())
+  email     String     @unique
+  name      String
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  resumes   Resume[]
+  savedJobs SavedJob[]
+}
+
+model Resume {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name      String
+  email     String
+  phone     String
+  location  String
+  summary   String?
+  skills    String   // JSON string of skills array
+  data      String   // Full resume JSON
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+}
+
+model Job {
+  id                String     @id @default(cuid())
+  title             String
+  company           String
+  location          String
+  jobType           String     // WFH, WFO, Hybrid
+  salaryMin         Float?
+  salaryMax         Float?
+  stipend           Float?
+  workingHours      String?
+  description       String
+  requiredSkills    String     // JSON string
+  preferredSkills   String?    // JSON string
+  experience        String?
+  postedDate        DateTime
+  deadline          DateTime?
+  companyRating     Float?
+  culturalFit       Float?
+  workLifeBalance   Float?
+  compensation      Float?
+  reviewCount       Int        @default(0)
+  workingConditions String?
+  benefits          String?    // JSON string
+  createdAt         DateTime   @default(now())
+  updatedAt         DateTime   @updatedAt
+  savedBy           SavedJob[]
+}
+
+model SavedJob {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  jobId     String
+  job       Job      @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([userId, jobId])
+  @@index([userId])
+}
+
+model CompatibilityScore {
+  id              String   @id @default(cuid())
+  resumeId        String
+  jobId           String
+  overallScore    Float
+  skillMatch      Float
+  experienceMatch Float
+  educationMatch  Float
+  projectMatch    Float
+  gaps            String   // JSON string
+  strengths       String   // JSON string
+  createdAt       DateTime @default(now())
+}
