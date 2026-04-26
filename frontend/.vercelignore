@@ -1,8 +1,18 @@
-# Ignore backend when deploying frontend
-backend/
+# Ignore everything except src and public
+../backend
+../prisma
+../.git
+../.gitignore
+../package.json
+../package-lock.json
+../next.config.ts
+../tsconfig.json
+../README.md
+../DEPLOYMENT_GUIDE.md
+../FOLDER_STRUCTURE.md
 .env.local
 .env
 *.md
 tests/
-.git/
 .next/cache
+.turbo
