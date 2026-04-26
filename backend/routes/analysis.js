@@ -1,5 +1,4 @@
-import { NextResponse } from 'next/server';
-import { fetchPublicJobsFallback, fetchRapidApiJobs } from '../../../../lib/jobProviders.js';
+import { fetchPublicJobsFallback, fetchRapidApiJobs } from '../lib/jobProviders.js';
 
 const fallbackJobs = [
   {
@@ -780,9 +779,9 @@ function buildInternshipMatches(jobs, skills, resumeContext) {
     .slice(0, 4);
 }
 
-export async function POST(request) {
+export default async function analysisRoute(req, res) {
   try {
-    const body = await request.json();
+    const body = req.body;
     const rawSkills = Array.isArray(body?.skills) ? body.skills : [];
     const keywords = Array.isArray(body?.keywords) ? body.keywords : [];
     const resumeText = String(body?.resumeText || '');
@@ -796,22 +795,20 @@ export async function POST(request) {
     };
 
     if (skills.length < 2 && resumeTokens.length < 12 && resumeThemes.length === 0) {
-      return NextResponse.json(
+      return res.status(400).json(
         {
           error:
             'Resume parsing quality is too low for reliable matching. Please upload a clearer text-based resume PDF.',
-        },
-        { status: 400 }
+        }
       );
     }
 
     const queries = buildJobQueries(skills, resumeText);
     if (!queries.length || (!skills.length && !keywords.length && resumeText.trim().length < 40)) {
-      return NextResponse.json(
+      return res.status(400).json(
         {
           error: 'Could not extract enough resume text to generate matching jobs. Please upload a text-based PDF resume.',
-        },
-        { status: 400 }
+        }
       );
     }
     let jobs = [];
@@ -857,7 +854,7 @@ export async function POST(request) {
           ? 'Your profile has a moderate match. Upskilling can significantly improve outcomes.'
           : 'You need focused skill building before targeting top roles.';
 
-    return NextResponse.json({
+    return res.json({
       overallScore,
       summary,
       topStrengths,
@@ -876,6 +873,6 @@ export async function POST(request) {
     });
   } catch (error) {
     console.error('Deep analysis error:', error);
-    return NextResponse.json({ error: 'Failed to generate deep analysis' }, { status: 500 });
+    res.status(500).json({ error: 'Failed to generate deep analysis' });
   }
 }

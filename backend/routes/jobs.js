@@ -1,5 +1,4 @@
-import { NextResponse } from 'next/server';
-import { fetchSerpApiJobs, fetchPublicJobsFallback } from '../../../lib/jobProviders.js';
+import { fetchSerpApiJobs, fetchPublicJobsFallback } from '../lib/jobProviders.js';
 
 const mockJobs = [
   {
@@ -84,13 +83,12 @@ const mockJobs = [
   },
 ];
 
-export async function GET(request) {
+export default async function jobsRoute(req, res) {
   try {
     const serpApiKey = (process.env.SERPAPI_KEY || '').trim();
-    const searchParams = request.nextUrl.searchParams;
-    const query = searchParams.get('q') || '';
-    const type = searchParams.get('type') || '';
-    const limit = Math.max(1, Math.min(100, Number(searchParams.get('limit') || 60)));
+    const query = req.query.q || '';
+    const type = req.query.type || '';
+    const limit = Math.max(1, Math.min(100, Number(req.query.limit || 60)));
 
     const serpJobs = await fetchSerpApiJobs({ query, type, limit });
     const publicJobs = serpJobs.length === 0 ? await fetchPublicJobsFallback({ query, type, limit }) : [];
@@ -113,7 +111,7 @@ export async function GET(request) {
       filtered = filtered.filter((job) => job.jobType === type);
     }
 
-    return NextResponse.json({
+    return res.json({
       jobs: filtered.slice(0, limit),
       source,
       meta: {
@@ -124,18 +122,6 @@ export async function GET(request) {
     });
   } catch (error) {
     console.error('Fetch jobs error:', error);
-    return NextResponse.json({ error: 'Failed to fetch jobs' }, { status: 500 });
-  }
-}
-
-export async function POST(request) {
-  try {
-    const body = await request.json();
-    return NextResponse.json(
-      { message: 'Job created successfully', job: body },
-      { status: 201 }
-    );
-  } catch (error) {
-    return NextResponse.json({ error: 'Failed to create job' }, { status: 500 });
+    res.status(500).json({ error: 'Failed to fetch jobs' });
   }
 }

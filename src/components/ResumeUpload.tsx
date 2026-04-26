@@ -3,6 +3,9 @@
 import Link from 'next/link';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+
+// Backend URL configuration
+const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3001';
 import {
   Upload,
   CheckCircle,
@@ -101,7 +104,7 @@ export default function ResumeUpload() {
       const formData = new FormData();
       formData.append('file', file);
 
-      const response = await fetch('/api/upload/parse-resume', {
+      const response = await fetch(`${BACKEND_URL}/api/upload/parse-resume`, {
         method: 'POST',
         body: formData,
       });
@@ -121,7 +124,7 @@ export default function ResumeUpload() {
 
         setAnalyzing(true);
 
-        const deepResponse = await fetch('/api/analysis/deep', {
+        const deepResponse = await fetch(`${BACKEND_URL}/api/analysis/deep`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',

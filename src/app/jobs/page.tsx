@@ -6,6 +6,9 @@ import { Search, Filter } from 'lucide-react';
 import JobCard from '../../components/JobCard';
 import { JobListing } from '../../types';
 
+// Backend URL configuration
+const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3001';
+
 export default function JobsPage() {
   const [jobs, setJobs] = useState<JobListing[]>([]);
   const [loading, setLoading] = useState(true);
@@ -22,7 +25,7 @@ export default function JobsPage() {
         if (jobType) params.append('type', jobType);
 
         params.append('limit', '60');
-        const response = await fetch(`/api/jobs?${params}`);
+        const response = await fetch(`${BACKEND_URL}/api/jobs?${params}`);
         const data = await response.json();
         setJobs(data.jobs || []);
         setSource(data.source || 'mock');

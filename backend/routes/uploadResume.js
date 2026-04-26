@@ -1,30 +1,25 @@
-import { NextResponse } from 'next/server';
 import {
   extractPdfText,
   extractSkills,
   extractResumeKeywords,
   isLikelyReadableResumeText,
-} from '../../../../utils/resumeParser.js';
+} from '../utils/resumeParser.js';
 
-export const runtime = 'nodejs';
-export const dynamic = 'force-dynamic';
-
-export async function POST(request) {
+export default async function uploadResumeRoute(req, res) {
   try {
-    const formData = await request.formData();
-    const file = formData.get('file');
+    const file = req.file;
 
     if (!file) {
-      return NextResponse.json({ error: 'No file provided' }, { status: 400 });
+      return res.status(400).json({ error: 'No file provided' });
     }
 
-    const buffer = await file.arrayBuffer();
+    const buffer = file.buffer;
     const parsedText = await extractPdfText(buffer);
     const text = parsedText.trim();
     const isReadable = isLikelyReadableResumeText(text);
 
     if (!isReadable) {
-      return NextResponse.json({
+      return res.json({
         text: '',
         skills: [],
         keywords: [],
@@ -57,20 +52,20 @@ export async function POST(request) {
       'work',
     ].some((signal) => lowerText.includes(signal));
 
-    const lowSignal = skills.length < 1 && meaningfulKeywords.length < 5;
-    const shouldReject = lowSignal && !hasCareerSignals;
+    const lowSignal = skills.length < 2 && meaningfulKeywords.length < 12;
+    const shouldReject = lowSignal || !hasCareerSignals;
+    
     if (shouldReject) {
-      // Still pass through the text so deep analysis can attempt to work with it
-      return NextResponse.json({
-        text,
-        skills,
-        keywords,
+      return res.json({
+        text: '',
+        skills: [],
+        keywords: [],
         parseWarning:
-          'Resume text was detected, but not enough skill/content signals were found for reliable matching. Results may be less accurate.',
+          'Resume text was detected, but not enough skill/content signals were found for reliable matching. Please upload a cleaner PDF export.',
       });
     }
 
-    return NextResponse.json({
+    return res.json({
       text,
       skills,
       keywords,
@@ -78,7 +73,7 @@ export async function POST(request) {
       message: 'Resume parsed successfully',
     });
   } catch (error) {
-    console.error('Upload error:', error);
-    return NextResponse.json({ error: 'Failed to process resume' }, { status: 500 });
+    console.error('Resume upload error:', error);
+    res.status(500).json({ error: 'Failed to process resume' });
   }
 }
