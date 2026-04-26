@@ -1,7 +1,18 @@
 'use client';
 
+import Link from 'next/link';
 import { useState } from 'react';
-import { Upload, CheckCircle, AlertCircle } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import {
+  Upload,
+  CheckCircle,
+  AlertCircle,
+  ArrowRight,
+  FileText,
+  LoaderCircle,
+  RefreshCw,
+  Trash2,
+} from 'lucide-react';
 import { motion } from 'framer-motion';
 
 type DeepAnalysis = {
@@ -33,6 +44,8 @@ export default function ResumeUpload() {
   const [analysis, setAnalysis] = useState<DeepAnalysis | null>(null);
   const [analyzing, setAnalyzing] = useState(false);
   const [parseWarning, setParseWarning] = useState('');
+  const [dragActive, setDragActive] = useState(false);
+  const router = useRouter();
 
   const visibleKeywords = parsedKeywords.filter((keyword) => {
     const token = String(keyword || '').toLowerCase().trim();
@@ -45,6 +58,7 @@ export default function ResumeUpload() {
 
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
+    setDragActive(false);
     const droppedFile = e.dataTransfer.files[0];
     if (droppedFile?.type === 'application/pdf') {
       setFile(droppedFile);
@@ -62,6 +76,17 @@ export default function ResumeUpload() {
     } else {
       setError('Please upload a PDF file');
     }
+  };
+
+  const resetFile = () => {
+    setFile(null);
+    setError('');
+    setSuccess(false);
+    setParsedSkills([]);
+    setParsedKeywords([]);
+    setAnalysis(null);
+    setParseWarning('');
+    localStorage.removeItem('careermatch_last_analysis');
   };
 
   const handleUpload = async () => {
@@ -130,11 +155,13 @@ export default function ResumeUpload() {
         );
 
         setSuccess(true);
-        setTimeout(() => setSuccess(false), 3000);
+        setTimeout(() => {
+          router.push('/dashboard');
+        }, 1500);
       } else {
         setError('Upload failed. Please try again.');
       }
-    } catch (err) {
+    } catch {
       setError('An error occurred during upload');
     } finally {
       setAnalyzing(false);
@@ -148,140 +175,163 @@ export default function ResumeUpload() {
       animate={{ opacity: 1, y: 0 }}
       className="w-full"
     >
-      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-blue-50 to-purple-50 p-8 border-2 border-dashed border-blue-200 hover:border-blue-400 transition-colors">
-        <div className="absolute inset-0 opacity-30">
-          <div className="absolute inset-0 bg-gradient-to-r from-blue-100 to-purple-100 animate-pulse" />
+      <div className="w-full space-y-6">
+        <div className="grid gap-3 sm:grid-cols-3">
+          <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Step 1</p>
+            <p className="mt-2 text-sm font-medium text-slate-700">Choose a PDF resume</p>
+          </div>
+          <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Step 2</p>
+            <p className="mt-2 text-sm font-medium text-slate-700">Run deep analysis</p>
+          </div>
+          <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Step 3</p>
+            <p className="mt-2 text-sm font-medium text-slate-700">Review fit and next moves</p>
+          </div>
         </div>
 
-        <div className="relative z-10 text-center">
-          <div className="flex justify-center mb-4">
-            {success ? (
-              <motion.div
-                initial={{ scale: 0 }}
-                animate={{ scale: 1 }}
-                className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center"
-              >
-                <CheckCircle className="w-8 h-8 text-green-600" />
-              </motion.div>
-            ) : (
-              <Upload className="w-16 h-16 text-blue-500" />
-            )}
+        <div
+          className={`rounded-[1.75rem] border p-6 transition-all sm:p-8 ${
+            dragActive
+              ? 'border-slate-900 bg-slate-50'
+              : 'border-slate-200 bg-white'
+          }`}
+        >
+          <div className="mb-6 flex items-start justify-between gap-4">
+            <div>
+              <p className="text-sm font-semibold uppercase tracking-[0.22em] text-slate-400">Upload</p>
+              <h2 className="mt-2 text-2xl font-semibold text-slate-900">Resume analysis</h2>
+              <p className="mt-2 text-sm leading-6 text-slate-600">
+                Drag in a PDF or browse from your device. We&apos;ll extract skills and generate role recommendations.
+              </p>
+            </div>
+            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-900 text-white">
+              {success ? <CheckCircle className="h-6 w-6" /> : <Upload className="h-6 w-6" />}
+            </div>
           </div>
 
-          <div className="mb-6">
-            <label
-              htmlFor="file-input"
-              onDragOver={(e) => e.preventDefault()}
-              onDrop={handleDrop}
-              className="cursor-pointer block"
-            >
-              <h3 className="text-xl font-bold text-gray-900 mb-2">
-                Drop your resume here
-              </h3>
-              <p className="text-gray-600 mb-4">or click to select a PDF file</p>
-              <input
-                id="file-input"
-                type="file"
-                accept=".pdf"
-                onChange={handleFileChange}
-                className="hidden"
-              />
-            </label>
+          <label
+            htmlFor="file-input"
+            onDragOver={(e) => {
+              e.preventDefault();
+              setDragActive(true);
+            }}
+            onDragLeave={() => setDragActive(false)}
+            onDrop={handleDrop}
+            className={`block cursor-pointer rounded-[1.5rem] border-2 border-dashed px-6 py-12 text-center transition-all ${
+              dragActive
+                ? 'border-slate-900 bg-slate-50'
+                : 'border-slate-200 bg-slate-50/60 hover:border-slate-300 hover:bg-slate-50'
+            }`}
+          >
+            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-3xl bg-white shadow-sm ring-1 ring-slate-200">
+              <FileText className="h-8 w-8 text-slate-700" />
+            </div>
+            <h3 className="mt-5 text-xl font-semibold text-slate-900">Drop your resume here</h3>
+            <p className="mt-2 text-sm text-slate-600">PDF only, or click to browse</p>
+            <input
+              id="file-input"
+              type="file"
+              accept=".pdf"
+              onChange={handleFileChange}
+              className="hidden"
+            />
+          </label>
 
-            {file && (
-              <div className="mt-6 p-4 bg-white rounded-lg border border-blue-200 text-left">
-                <p className="text-gray-800 font-medium mb-4">
-                  Selected: {file.name}
-                </p>
+          <div className="mt-5 flex flex-wrap gap-2">
+            <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-medium text-slate-600">
+              Best with text-based PDFs
+            </span>
+            <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-medium text-slate-600">
+              Skills extracted automatically
+            </span>
+            <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-medium text-slate-600">
+              Dashboard saved locally
+            </span>
+          </div>
+
+          {file && (
+            <div className="mt-6 rounded-[1.5rem] border border-slate-200 bg-slate-50 p-5 text-left">
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                <div>
+                  <p className="text-sm text-slate-500">Selected file</p>
+                  <p className="mt-1 text-base font-semibold text-slate-900 break-all">{file.name}</p>
+                  <p className="mt-2 text-sm text-slate-500">
+                    Ready to parse skills, keywords, and role fit signals.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={resetFile}
+                  className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-600 transition hover:border-slate-300 hover:text-slate-900"
+                >
+                  <Trash2 className="h-4 w-4" />
+                  Remove
+                </button>
+              </div>
+
+              <div className="mt-5 flex flex-col gap-3 sm:flex-row">
                 <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
                   onClick={handleUpload}
                   disabled={uploading}
-                  className="w-full px-6 py-3 bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500 text-white rounded-xl font-semibold hover:shadow-lg transition-all disabled:opacity-50"
+                  className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-slate-900 px-6 py-3 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-300"
                 >
-                  {uploading ? 'Uploading...' : 'Upload & Analyze'}
+                  {uploading ? (
+                    <>
+                      <LoaderCircle className="h-4 w-4 animate-spin" />
+                      {analyzing ? 'Analyzing resume...' : 'Uploading resume...'}
+                    </>
+                  ) : (
+                    <>
+                      Upload and analyze
+                      <ArrowRight className="h-4 w-4" />
+                    </>
+                  )}
                 </motion.button>
-              </div>
-            )}
-          </div>
-
-          {success && (
-            <div className="mb-6 rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-left">
-              <p className="font-semibold text-green-800">Resume uploaded successfully!</p>
-              <p className="text-sm text-green-700">
-                Your resume is being analyzed. You’ll see recommendations below.
-              </p>
-              {analyzing && <p className="mt-2 text-sm font-medium text-indigo-600">Running deep analysis...</p>}
-            </div>
-          )}
-
-          {parsedSkills.length > 0 && (
-            <div className="mt-5 flex flex-wrap justify-center gap-2">
-              {parsedSkills.slice(0, 8).map((skill) => (
-                <span
-                  key={skill}
-                  className="px-3 py-1 rounded-full bg-white/80 text-blue-700 text-xs font-semibold shadow-sm border border-blue-100"
+                <label
+                  htmlFor="file-input"
+                  className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-full border border-slate-200 bg-white px-5 py-3 text-sm font-medium text-slate-700 transition hover:border-slate-300 hover:bg-slate-50"
                 >
-                  {skill}
-                </span>
-              ))}
-            </div>
-          )}
-
-          {visibleKeywords.length > 0 && (
-            <div className="mt-4 flex flex-wrap justify-center gap-2">
-              {visibleKeywords.slice(0, 8).map((keyword) => (
-                <span
-                  key={keyword}
-                  className="px-3 py-1 rounded-full bg-white/80 text-slate-700 text-xs font-semibold shadow-sm border border-slate-200"
-                >
-                  {keyword}
-                </span>
-              ))}
-            </div>
-          )}
-
-          {analysis && (
-            <div className="mt-6 space-y-4 text-left">
-              <div className="rounded-xl border border-indigo-100 bg-white/90 p-4">
-                <p className="text-xs uppercase tracking-wide text-indigo-600 font-bold">Deep Analysis Score</p>
-                <p className="text-2xl font-black text-slate-900 mt-1">{analysis.overallScore}%</p>
-                <p className="text-sm text-slate-600 mt-1">{analysis.summary}</p>
+                  <RefreshCw className="h-4 w-4" />
+                  Change file
+                </label>
               </div>
+            </div>
+          )}
 
-              {analysis.recommendations?.length > 0 && (
-                <div className="rounded-xl border border-blue-100 bg-white/90 p-4">
-                  <p className="text-sm font-bold text-slate-900 mb-3">Top Job Recommendations</p>
-                  <div className="space-y-3">
-                    {analysis.recommendations.slice(0, 3).map((rec, idx) => (
-                      <div key={`${rec.title}-${idx}`} className="rounded-lg border border-slate-100 bg-slate-50 p-3">
-                        <div className="flex items-center justify-between gap-3">
-                          <p className="font-semibold text-slate-900 text-sm">{rec.title}</p>
-                          <span className="text-xs font-bold px-2 py-1 rounded-full bg-indigo-100 text-indigo-700">
-                            {rec.compatibility}% fit
-                          </span>
-                        </div>
-                        <p className="text-xs text-slate-600 mt-1">{rec.company}</p>
-                        <p className="text-xs text-slate-600 mt-2">{rec.reason}</p>
-                      </div>
-                    ))}
-                  </div>
+          {(uploading || analyzing) && (
+            <div className="mt-5 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4">
+              <div className="flex items-center gap-3">
+                <LoaderCircle className="h-5 w-5 animate-spin text-slate-700" />
+                <div>
+                  <p className="text-sm font-medium text-slate-900">Working on your analysis</p>
+                  <p className="text-sm text-slate-600">
+                    Extracting skills, building recommendations, and preparing your next-step summary.
+                  </p>
                 </div>
-              )}
+              </div>
+            </div>
+          )}
 
-              {analysis.actionPlan?.length > 0 && (
-                <div className="rounded-xl border border-purple-100 bg-white/90 p-4">
-                  <p className="text-sm font-bold text-slate-900 mb-2">Action Plan</p>
-                  <ul className="space-y-2">
-                    {analysis.actionPlan.slice(0, 3).map((step) => (
-                      <li key={`${step.step}-${step.skill}`} className="text-xs text-slate-700">
-                        <span className="font-semibold">Step {step.step}:</span> {step.skill} · {step.timeframe}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
+          {success && analysis && (
+            <div className="mt-5 flex flex-wrap items-center gap-3 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-4 text-left">
+              <CheckCircle className="h-5 w-5 text-emerald-600" />
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-semibold text-emerald-900">Analysis ready</p>
+                <p className="text-sm text-emerald-700">
+                  Resume parsed successfully. Your latest dashboard is available now.
+                </p>
+              </div>
+              <Link
+                href="/dashboard"
+                className="inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 text-sm font-semibold text-slate-900 ring-1 ring-emerald-200 transition hover:bg-emerald-100"
+              >
+                Open dashboard
+                <ArrowRight className="h-4 w-4" />
+              </Link>
             </div>
           )}
 
@@ -289,10 +339,10 @@ export default function ResumeUpload() {
             <motion.div
               initial={{ opacity: 0, y: -10 }}
               animate={{ opacity: 1, y: 0 }}
-              className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg flex items-center gap-3"
+              className="mt-5 flex items-center gap-3 rounded-2xl border border-red-200 bg-red-50 p-4"
             >
-              <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0" />
-              <p className="text-red-600 text-sm">{error}</p>
+              <AlertCircle className="h-5 w-5 flex-shrink-0 text-red-600" />
+              <p className="text-sm text-red-700">{error}</p>
             </motion.div>
           )}
 
@@ -300,10 +350,10 @@ export default function ResumeUpload() {
             <motion.div
               initial={{ opacity: 0, y: -10 }}
               animate={{ opacity: 1, y: 0 }}
-              className="mt-4 p-4 bg-amber-50 border border-amber-200 rounded-lg flex items-center gap-3 text-left"
+              className="mt-5 flex items-center gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-left"
             >
-              <AlertCircle className="w-5 h-5 text-amber-600 flex-shrink-0" />
-              <p className="text-amber-700 text-sm">{parseWarning}</p>
+              <AlertCircle className="h-5 w-5 flex-shrink-0 text-amber-600" />
+              <p className="text-sm text-amber-700">{parseWarning}</p>
             </motion.div>
           )}
         </div>

@@ -88,6 +88,67 @@ const fallbackJobs = [
   },
 ];
 
+const learningResourceLibrary = {
+  'JavaScript': [
+    { title: 'JavaScript.info', type: 'Documentation', url: 'https://javascript.info/' },
+    { title: 'Namaste JavaScript (YouTube Playlist)', type: 'YouTube', url: 'https://www.youtube.com/playlist?list=PLlasXeu85E9cQ32gLCvAvr9vNaUccPVNP' },
+  ],
+  'TypeScript': [
+    { title: 'TypeScript Handbook', type: 'Documentation', url: 'https://www.typescriptlang.org/docs/' },
+    { title: 'TypeScript Full Course by freeCodeCamp', type: 'YouTube', url: 'https://www.youtube.com/watch?v=30LWjhZzg50' },
+  ],
+  'React': [
+    { title: 'React Docs', type: 'Documentation', url: 'https://react.dev/learn' },
+    { title: 'Codevolution React Tutorial', type: 'YouTube', url: 'https://www.youtube.com/playlist?list=PLC3y8-rFHvwg0jVSE3ou8QWmgxS3JpXfH' },
+  ],
+  'Next.js': [
+    { title: 'Next.js Learn', type: 'Documentation', url: 'https://nextjs.org/learn' },
+    { title: 'Next.js Course by freeCodeCamp', type: 'YouTube', url: 'https://www.youtube.com/watch?v=OXGznpKZ_sA' },
+  ],
+  'Node.js': [
+    { title: 'Node.js Docs', type: 'Documentation', url: 'https://nodejs.org/en/learn' },
+    { title: 'Node.js Playlist by Piyush Garg', type: 'YouTube', url: 'https://www.youtube.com/playlist?list=PLinedj3B30sBsmRRL8XyTGadjRGkzQ3dU' },
+  ],
+  SQL: [
+    { title: 'SQLBolt', type: 'Practice', url: 'https://sqlbolt.com/' },
+    { title: 'SQL Tutorial by freeCodeCamp', type: 'YouTube', url: 'https://www.youtube.com/watch?v=HXV3zeQKqGY' },
+  ],
+  Python: [
+    { title: 'Python Docs', type: 'Documentation', url: 'https://docs.python.org/3/tutorial/' },
+    { title: 'Python for Everybody', type: 'YouTube', url: 'https://www.youtube.com/watch?v=8DvywoWv6fI' },
+  ],
+  'Machine Learning': [
+    { title: 'Google Machine Learning Crash Course', type: 'Course', url: 'https://developers.google.com/machine-learning/crash-course' },
+    { title: 'StatQuest Machine Learning Playlist', type: 'YouTube', url: 'https://www.youtube.com/playlist?list=PLblh5JKOoLUICTaGLRoHQDuF_7q2GfuJF' },
+  ],
+  Docker: [
+    { title: 'Docker Docs', type: 'Documentation', url: 'https://docs.docker.com/get-started/' },
+    { title: 'Docker Tutorial for Beginners', type: 'YouTube', url: 'https://www.youtube.com/watch?v=3c-iBn73dDE' },
+  ],
+  Kubernetes: [
+    { title: 'Kubernetes Basics', type: 'Documentation', url: 'https://kubernetes.io/docs/tutorials/kubernetes-basics/' },
+    { title: 'Kubernetes Course by TechWorld with Nana', type: 'YouTube', url: 'https://www.youtube.com/watch?v=s_o8dwzRlu4' },
+  ],
+  AWS: [
+    { title: 'AWS Skill Builder', type: 'Course', url: 'https://explore.skillbuilder.aws/learn' },
+    { title: 'AWS Cloud Practitioner Full Course', type: 'YouTube', url: 'https://www.youtube.com/watch?v=SOTamWNgDKc' },
+  ],
+  'Power BI': [
+    { title: 'Microsoft Power BI Learning', type: 'Documentation', url: 'https://learn.microsoft.com/power-bi/' },
+    { title: 'Power BI Full Course by Simplilearn', type: 'YouTube', url: 'https://www.youtube.com/watch?v=AGrl-H87pRU' },
+  ],
+  Tableau: [
+    { title: 'Tableau Learning', type: 'Documentation', url: 'https://www.tableau.com/learn/training' },
+    { title: 'Tableau Tutorial Full Course', type: 'YouTube', url: 'https://www.youtube.com/watch?v=aHaOIvR00So' },
+  ],
+};
+
+const defaultLearningResources = [
+  { title: 'roadmap.sh Skill Roadmaps', type: 'Roadmap', url: 'https://roadmap.sh/' },
+  { title: 'freeCodeCamp Full Courses', type: 'YouTube', url: 'https://www.youtube.com/@freecodecamp' },
+  { title: 'GeeksforGeeks Practice', type: 'Practice', url: 'https://www.geeksforgeeks.org/' },
+];
+
 function unique(list) {
   return [...new Set(list.filter(Boolean))];
 }
@@ -584,6 +645,141 @@ function buildActionPlan(missingSkills) {
   }));
 }
 
+function getResourcesForSkill(skill) {
+  const normalized = String(skill || '').trim().toLowerCase();
+  const directMatch = Object.entries(learningResourceLibrary).find(
+    ([key]) => key.toLowerCase() === normalized
+  );
+
+  if (directMatch) {
+    return [...directMatch[1], ...defaultLearningResources.slice(0, 1)];
+  }
+
+  const fuzzyMatch = Object.entries(learningResourceLibrary).find(([key]) => {
+    const lowerKey = key.toLowerCase();
+    return lowerKey.includes(normalized) || normalized.includes(lowerKey);
+  });
+
+  if (fuzzyMatch) {
+    return [...fuzzyMatch[1], ...defaultLearningResources.slice(0, 1)];
+  }
+
+  return [
+    {
+      title: `${skill} fundamentals roadmap`,
+      type: 'Roadmap',
+      url: 'https://roadmap.sh/',
+    },
+    ...defaultLearningResources.slice(1, 3),
+  ];
+}
+
+function buildSkillRoadmaps(missingSkills) {
+  const prioritized = unique(missingSkills).slice(0, 4);
+
+  return prioritized.map((skill, idx) => {
+    const resources = getResourcesForSkill(skill);
+
+    return {
+      skill,
+      targetLevel: idx < 2 ? 'Job-ready Intermediate' : 'Strong Beginner',
+      estimatedDuration: idx < 2 ? '4-6 weeks' : '3-4 weeks',
+      milestones: [
+        {
+          week: 'Week 1',
+          title: `${skill} foundations`,
+          outcome: `Understand core concepts and implement basic ${skill} tasks.`,
+          resources: resources.slice(0, 2),
+        },
+        {
+          week: 'Week 2-3',
+          title: `${skill} hands-on practice`,
+          outcome: `Build mini exercises and solve at least 10 practical problems in ${skill}.`,
+          resources: resources.slice(1, 3),
+        },
+        {
+          week: 'Week 4+',
+          title: `${skill} portfolio proof`,
+          outcome: `Publish one project that showcases measurable results using ${skill}.`,
+          resources: resources.slice(0, 1),
+        },
+      ],
+    };
+  });
+}
+
+function buildProjectIdeas(missingSkills, topStrengths) {
+  const primaryGap = missingSkills[0] || 'core engineering skills';
+  const secondaryGap = missingSkills[1] || 'data analysis';
+  const strength = topStrengths[0] || 'problem solving';
+
+  return [
+    {
+      title: `${primaryGap} Capstone Project`,
+      difficulty: 'Intermediate',
+      impact: 'High recruiter signal',
+      description: `Build an end-to-end project focused on ${primaryGap}, and highlight outcomes with metrics.`,
+      resumeBullet: `Built a production-style ${primaryGap} project and improved performance/accuracy with measurable KPIs.`,
+    },
+    {
+      title: `${secondaryGap} + ${strength} Applied Case Study`,
+      difficulty: 'Beginner to Intermediate',
+      impact: 'Strong portfolio story',
+      description: `Create a practical case study combining ${secondaryGap} with your strength in ${strength}.`,
+      resumeBullet: `Designed and delivered a practical case study combining ${secondaryGap} and ${strength}.`,
+    },
+  ];
+}
+
+function buildProfileSuggestions(recommendations) {
+  return recommendations.slice(0, 4).map((rec) => ({
+    title: rec.title,
+    fit: rec.compatibility,
+    fitLabel:
+      rec.compatibility >= 75
+        ? 'High-fit now'
+        : rec.compatibility >= 50
+          ? 'Ready with upskilling'
+          : 'Long-term target',
+    matchedSkills: (rec.matchedSkills || []).slice(0, 4),
+    nextSkills: (rec.missingSkills || []).slice(0, 3),
+  }));
+}
+
+function buildInternshipMatches(jobs, skills, resumeContext) {
+  const internshipJobs = jobs.filter((job) => {
+    const text = `${String(job?.title || '').toLowerCase()} ${String(job?.description || '').toLowerCase()}`;
+    return (
+      text.includes('intern') ||
+      text.includes('internship') ||
+      text.includes('trainee') ||
+      text.includes('apprentice')
+    );
+  });
+
+  const source = internshipJobs.length > 0 ? internshipJobs : jobs.slice(0, 5);
+
+  return source
+    .map((job) => {
+      const fit = calculateCompatibility(skills, job, resumeContext);
+      return {
+        jobId: job.id,
+        title: job.title,
+        company: job.company,
+        location: job.location || 'Not specified',
+        type: job.jobType || 'WFO',
+        compatibility: fit.score,
+        matchedSkills: fit.matched.slice(0, 4),
+        applyHint:
+          fit.score >= 65
+            ? 'Apply now and tailor resume bullets to this role.'
+            : 'Apply after completing 1 focused project from your roadmap.',
+      };
+    })
+    .sort((a, b) => b.compatibility - a.compatibility)
+    .slice(0, 4);
+}
+
 export async function POST(request) {
   try {
     const body = await request.json();
@@ -644,6 +840,8 @@ export async function POST(request) {
     const recommendations = buildRecommendations(skills, jobs, resumeContext);
     const allMissing = recommendations.flatMap((r) => r.missingSkills || []);
     const allMatched = recommendations.flatMap((r) => r.matchedSkills || []);
+    const topStrengths = unique(allMatched).slice(0, 8);
+    const keyGaps = unique(allMissing).slice(0, 8);
 
     const overallScore =
       recommendations.length > 0
@@ -662,10 +860,14 @@ export async function POST(request) {
     return NextResponse.json({
       overallScore,
       summary,
-      topStrengths: unique(allMatched).slice(0, 8),
-      keyGaps: unique(allMissing).slice(0, 8),
+      topStrengths,
+      keyGaps,
       recommendations,
       actionPlan: buildActionPlan(allMissing),
+      skillRoadmaps: buildSkillRoadmaps(keyGaps),
+      projectIdeas: buildProjectIdeas(keyGaps, topStrengths),
+      suggestedProfiles: buildProfileSuggestions(recommendations),
+      internshipMatches: buildInternshipMatches(jobs, skills, resumeContext),
       resumeHighlights: resumeText
         .split('\n')
         .map((line) => line.trim())

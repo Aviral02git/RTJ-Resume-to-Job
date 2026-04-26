@@ -17,86 +17,56 @@ function isLikelyUsefulText(text) {
   return clean.length >= 60 && words.length >= 12 && uniqueWords.size >= 8;
 }
 
-async function extractWithPdfParse(bytes) {
-  // Pre-set globalThis to prevent Object.defineProperty crash in Next.js
-  try {
-    if (typeof globalThis.pdfjs === 'undefined') {
-      globalThis.pdfjs = {};
+async function extractWithSubprocess(bytes) {
+  return new Promise(async (resolve, reject) => {
+    try {
+      const cp = await import('child_process');
+      const path = await import('path');
+      
+      // Find the worker relative to project root
+      const join = path.default ? path.default.join : path.join;
+      const workerPath = join(process.cwd(), 'src', 'utils', 'pdfExtractWorker.mjs');
+      
+      const spawnFn = cp.default ? cp.default.spawn : cp.spawn;
+      const child = spawnFn('node', [workerPath], { stdio: ['pipe', 'pipe', 'pipe'] });
+    let stdoutData = '';
+    let stderrData = '';
+    
+    child.stdout.setEncoding('utf8');
+    child.stderr.setEncoding('utf8');
+    
+    child.stdout.on('data', (data) => { stdoutData += data; });
+    child.stderr.on('data', (data) => { stderrData += data; });
+    
+    child.on('error', (err) => {
+      reject(err);
+    });
+    
+    child.on('close', (code) => {
+      try {
+        if (!stdoutData) {
+          return resolve('');
+        }
+        const result = JSON.parse(stdoutData);
+        if (result.error) {
+          console.error("Subprocess PDF extraction error:", result.error, stderrData);
+          resolve(''); // fallback to raw stream extraction
+        } else {
+          resolve(normalizeExtractedText(result.text || ''));
+        }
+      } catch (err) {
+        console.error("Failed to parse worker output:", err, "Output:", stdoutData);
+        resolve('');
+      }
+    });
+    
+    const base64 = Buffer.from(bytes).toString('base64');
+    child.stdin.write(base64);
+    child.stdin.end();
+    } catch (err) {
+      reject(err);
     }
-    if (!globalThis.pdfjs.GlobalWorkerOptions) {
-      globalThis.pdfjs.GlobalWorkerOptions = { workerSrc: '' };
-    }
-  } catch { /* ignore */ }
-
-  const pdfParseModule = await import('pdf-parse');
-  const PDFParse =
-    pdfParseModule?.PDFParse ||
-    pdfParseModule?.default?.PDFParse ||
-    pdfParseModule?.default;
-
-  if (!PDFParse) {
-    throw new TypeError('pdf-parse v2 PDFParse export not found');
-  }
-
-  const parser = new PDFParse({
-    data: Buffer.from(bytes),
-    verbosity: 0,
-    disableWorker: true,
-    useWorkerFetch: false,
-    isEvalSupported: false,
-    useSystemFonts: false,
   });
-  try {
-    const result = await parser.getText();
-    return normalizeExtractedText(result?.text || '');
-  } finally {
-    await parser.destroy().catch(() => {});
-  }
-}
-
-async function extractWithPdfJs(bytes) {
-  // Pre-set globalThis to prevent Object.defineProperty crash in Next.js
-  try {
-    if (typeof globalThis.pdfjs === 'undefined') {
-      globalThis.pdfjs = {};
-    }
-    if (!globalThis.pdfjs.GlobalWorkerOptions) {
-      globalThis.pdfjs.GlobalWorkerOptions = { workerSrc: '' };
-    }
-  } catch { /* ignore */ }
-
-  const pdfjs = await import('pdfjs-dist/legacy/build/pdf.mjs');
-
-  // Attempt to disable the worker to avoid Object.defineProperty issues
-  try {
-    if (pdfjs.GlobalWorkerOptions) {
-      pdfjs.GlobalWorkerOptions.workerSrc = '';
-    }
-  } catch { /* frozen module namespace — ignore */ }
-
-  const task = pdfjs.getDocument({
-    data: new Uint8Array(bytes),
-    disableWorker: true,
-    useWorkerFetch: false,
-    isEvalSupported: false,
-    useSystemFonts: false,
-    verbosity: 0,
-  });
-
-  const pdfDocument = await task.promise;
-  const pageTexts = [];
-
-  for (let pageNumber = 1; pageNumber <= pdfDocument.numPages; pageNumber += 1) {
-    const page = await pdfDocument.getPage(pageNumber);
-    const content = await page.getTextContent();
-    const pageText = content.items
-      .map((item) => (typeof item?.str === 'string' ? item.str : ''))
-      .join(' ')
-      .trim();
-    if (pageText) pageTexts.push(pageText);
-  }
-
-  return normalizeExtractedText(pageTexts.join('\n'));
 }
 
 function extractWithRawPdfStreams(bytes) {
@@ -162,19 +132,11 @@ export async function extractPdfText(buffer) {
   let bestText = '';
 
   try {
-    const text = await extractWithPdfParse(bytes);
+    const text = await extractWithSubprocess(bytes);
     if (text.length > bestText.length) bestText = text;
     if (isLikelyUsefulText(bestText)) return bestText;
   } catch (error) {
-    console.error('pdf-parse extraction failed:', error?.message || error);
-  }
-
-  try {
-    const text = await extractWithPdfJs(bytes);
-    if (text.length > bestText.length) bestText = text;
-    if (isLikelyUsefulText(bestText)) return bestText;
-  } catch (error) {
-    console.error('PDF.js extraction failed:', error?.message || error);
+    console.error('Subprocess extraction failed:', error?.message || error);
   }
 
   try {

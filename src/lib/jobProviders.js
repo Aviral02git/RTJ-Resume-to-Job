@@ -25,7 +25,7 @@ export async function fetchSerpApiJobs({ query, type, limit = 60 }) {
 
   const q = query?.trim() || 'software developer jobs in india';
   const params = new URLSearchParams({
-    engine: 'google',
+    engine: 'google_jobs',
     q,
     api_key: serpApiKey,
   });
@@ -42,9 +42,7 @@ export async function fetchSerpApiJobs({ query, type, limit = 60 }) {
     }
 
     const data = await response.json();
-    const sourceItems = Array.isArray(data?.jobs_results) && data.jobs_results.length > 0
-      ? data.jobs_results
-      : (data?.organic_results || []);
+    const sourceItems = Array.isArray(data?.jobs_results) ? data.jobs_results : [];
 
     let jobs = sourceItems.map((item, index) => {
       const extensionText = Array.isArray(item?.extensions)
