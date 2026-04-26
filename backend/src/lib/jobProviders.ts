@@ -1,4 +1,4 @@
-import { JobListing } from '../types';
+import { JobListing } from '../types/index';
 
 type FetchJobsInput = {
   query?: string;

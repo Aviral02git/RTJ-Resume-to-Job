@@ -1,0 +1,8 @@
+# Ignore backend when deploying frontend
+backend/
+.env.local
+.env
+*.md
+tests/
+.git/
+.next/cache

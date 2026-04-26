@@ -1,0 +1,7 @@
+{
+  "excludeDefaultMomentLocales": true,
+  "typescript": {
+    "tsconfigPath": "./tsconfig.json"
+  },
+  "transpilePackages": []
+}

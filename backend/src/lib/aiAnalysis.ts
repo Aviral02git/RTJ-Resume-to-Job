@@ -1,4 +1,3 @@
-import { PreparationPlan, Improvement } from '../types';
 import OpenAI from 'openai';
 
 const GROQ_API_KEY = process.env.GROQ_API_KEY;
