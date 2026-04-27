@@ -42,21 +42,12 @@ export default function ResumeUpload() {
   const [uploading, setUploading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState('');
-  const [parsedKeywords, setParsedKeywords] = useState<string[]>([]);
   const [analysis, setAnalysis] = useState<DeepAnalysis | null>(null);
   const [analyzing, setAnalyzing] = useState(false);
   const [parseWarning, setParseWarning] = useState('');
   const [dragActive, setDragActive] = useState(false);
   const router = useRouter();
 
-  const visibleKeywords = parsedKeywords.filter((keyword) => {
-    const token = String(keyword || '').toLowerCase().trim();
-    if (!token) return false;
-    if (token.length < 3) return false;
-    if (token.includes('resume') || token.includes('curriculum') || token.includes('vitae')) return false;
-    if (['pdf', 'doc', 'docx', 'file', 'upload', 'attachment', 'final', 'latest'].includes(token)) return false;
-    return true;
-  });
 
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
@@ -84,7 +75,6 @@ export default function ResumeUpload() {
     setFile(null);
     setError('');
     setSuccess(false);
-    setParsedKeywords([]);
     setAnalysis(null);
     setParseWarning('');
     localStorage.removeItem('careermatch_last_analysis');
