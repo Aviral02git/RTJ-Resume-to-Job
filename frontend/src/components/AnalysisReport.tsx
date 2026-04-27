@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   CheckCircle2, Target, TrendingUp, Zap, BookOpen,
   Briefcase, Star, ChevronDown, ChevronUp, Award, BarChart3,
-  Clock, ArrowRight, FileText, Layers, Sparkles, AlertTriangle,
+  Clock, FileText, Layers, Sparkles, AlertTriangle,
   ExternalLink, Trophy, Brain,
 } from 'lucide-react';
 import { useState } from 'react';
