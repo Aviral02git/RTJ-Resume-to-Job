@@ -42,7 +42,6 @@ export default function ResumeUpload() {
   const [uploading, setUploading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState('');
-  const [parsedSkills, setParsedSkills] = useState<string[]>([]);
   const [parsedKeywords, setParsedKeywords] = useState<string[]>([]);
   const [analysis, setAnalysis] = useState<DeepAnalysis | null>(null);
   const [analyzing, setAnalyzing] = useState(false);
@@ -85,7 +84,6 @@ export default function ResumeUpload() {
     setFile(null);
     setError('');
     setSuccess(false);
-    setParsedSkills([]);
     setParsedKeywords([]);
     setAnalysis(null);
     setParseWarning('');
@@ -111,9 +109,7 @@ export default function ResumeUpload() {
 
       if (response.ok) {
         const data = await response.json();
-        setParsedSkills(data.skills || []);
-        setParsedKeywords(data.keywords || []);
-        setParseWarning(data.parseWarning || '');
+
 
         if (!data.text) {
           setAnalysis(null);
