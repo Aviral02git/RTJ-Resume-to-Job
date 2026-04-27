@@ -13,33 +13,24 @@ export async function parsePDF(file: File): Promise<string> {
   return data.text;
 }
 
+/**
+ * Extracts text from a PDF buffer by sending it to the server-side parse API.
+ * The actual extraction logic lives in resumeParser.js (subprocess / raw-stream fallbacks).
+ */
 export async function extractPdfText(buffer: ArrayBuffer | Uint8Array): Promise<string> {
   try {
-    const pdfjs = await import('pdfjs-dist/legacy/build/pdf.mjs');
-    const pdfDocument = await pdfjs.getDocument({ data: new Uint8Array(buffer) }).promise;
+    const blob = new Blob([buffer instanceof Uint8Array ? buffer.buffer as ArrayBuffer : buffer], { type: 'application/pdf' });
+    const formData = new FormData();
+    formData.append('file', blob, 'upload.pdf');
 
-    const pageTexts: string[] = [];
-    for (let pageNumber = 1; pageNumber <= pdfDocument.numPages; pageNumber += 1) {
-      const page = await pdfDocument.getPage(pageNumber);
-      const content = await page.getTextContent();
-      const pageText = content.items
-        .map((item: any) => (typeof item.str === 'string' ? item.str : ''))
-        .join(' ')
-        .trim();
-      if (pageText) pageTexts.push(pageText);
-    }
+    const response = await fetch('/api/upload/parse-resume', {
+      method: 'POST',
+      body: formData,
+    });
 
-    const text = pageTexts.join('\n').trim();
-    if (text) return text;
-  } catch {
-    // fall through to pdf-parse
-  }
-
-  try {
-    const pdfParseModule = await import('pdf-parse');
-    const pdfParse = pdfParseModule as unknown as (data: Buffer) => Promise<{ text?: string }>;
-    const parsed = await pdfParse(Buffer.from(new Uint8Array(buffer)));
-    return String(parsed?.text || '').trim();
+    if (!response.ok) return '';
+    const data = await response.json();
+    return String(data?.text || '').trim();
   } catch {
     return '';
   }
@@ -138,7 +129,7 @@ export function calculateEducationMatch(
 
 export function generatePreparationPlan(
   gaps: string[],
-  skills: string[]
+  _skills: string[]
 ): string[] {
   const plans = gaps.map(
     (gap) => `Learn ${gap} - estimated 40-60 hours, practice with projects`
