@@ -2,7 +2,7 @@
 
 Transform your career journey with CareerMatch! Our intelligent platform analyzes your resume, matches you with perfect job opportunities, and provides personalized preparation plans and resume optimization tips.
 
-## 🌟 Features
+##  Features
 
 ### Core Features
 - **Resume Analysis**: Upload your PDF resume and get instant parsing and skill extraction
